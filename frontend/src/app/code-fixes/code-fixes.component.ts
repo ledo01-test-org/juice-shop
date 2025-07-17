@@ -2,6 +2,7 @@ import { Component, Input, type OnInit, Output, EventEmitter, ViewChild, type Do
 import { NgxTextDiffComponent } from 'ngx-text-diff'
 import { CookieService } from 'ngx-cookie'
 import { type DiffTableFormat } from 'ngx-text-diff/lib/ngx-text-diff.model'
+import * as crypto from 'crypto'
 
 interface RandomFixes {
   fix: string
@@ -46,14 +47,13 @@ export class CodeFixesComponent implements OnInit, DoCheck {
       })
       index++
     }
-    let randomRotation = Math.random() * 100
-    while (randomRotation > 0) {
+    const randomRotation = crypto.randomInt(1, 100)
+    for (let j = 0; j < randomRotation; j++) {
       const end = this.randomFixes[this.randomFixes.length - 1]
       for (let i = this.randomFixes.length - 1; i > 0; i--) {
         this.randomFixes[i] = this.randomFixes[i - 1]
       }
       this.randomFixes[0] = end
-      randomRotation--
     }
   }
 
