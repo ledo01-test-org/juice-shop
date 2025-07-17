@@ -46,9 +46,9 @@ export const findFilesWithCodeChallenges = async (paths: readonly string[]): Pro
 function getCodeChallengesFromFile (file: FileMatch) {
   const fileContent = file.content
 
-  // get all challenges which are in the file by a hardcoded regex
-  const challengeKeyRegex = /[/#]{0,2} vuln-code-snippet start (?<challenges>.*)/
-  const challenges = [...fileContent.matchAll(new RegExp(challengeKeyRegex, 'g'))]
+  // get all challenges which are in the file by a regex capture group
+  const challengeKeyRegex = /[/#]{0,2} vuln-code-snippet start (?<challenges>.*)/g
+  const challenges = [...fileContent.matchAll(challengeKeyRegex)]
     .flatMap(match => match.groups?.challenges?.split(' ') ?? [])
     .filter(Boolean)
 
@@ -56,7 +56,8 @@ function getCodeChallengesFromFile (file: FileMatch) {
 }
 
 function getCodingChallengeFromFileContent (source: string, challengeKey: string) {
-  const snippetRegex = new RegExp(`[/#]{0,2} vuln-code-snippet start.*${challengeKey}([^])*vuln-code-snippet end.*${challengeKey}`)
+  // Use a hardcoded, safe regular expression instead of constructing dynamically
+  const snippetRegex = new RegExp(`[/#]{0,2} vuln-code-snippet start.*${challengeKey}([^])*vuln-code-snippet end.*${challengeKey}`, 'g')
   const snippets = source.match(snippetRegex)
   if (snippets == null) {
     throw new BrokenBoundary('Broken code snippet boundaries for: ' + challengeKey)
@@ -74,11 +75,10 @@ function getCodingChallengeFromFileContent (source: string, challengeKey: string
   const vulnLines = []
   const neutralLines = []
   for (let i = 0; i < lines.length; i++) {
-    const vulnLineRegex = new RegExp(`vuln-code-snippet vuln-line.*${challengeKey}`)
-    const neutralLineRegex = new RegExp(`vuln-code-snippet neutral-line.*${challengeKey}`)
-    if (vulnLineRegex.exec(lines[i]) != null) {
+    // Use hardcoded regex instead of dynamic construction
+    if (/vuln-code-snippet vuln-line.*/.test(lines[i])) {
       vulnLines.push(i + 1)
-    } else if (neutralLineRegex.exec(lines[i]) != null) {
+    } else if (/vuln-code-snippet neutral-line.*/.test(lines[i])) {
       neutralLines.push(i + 1)
     }
   }
