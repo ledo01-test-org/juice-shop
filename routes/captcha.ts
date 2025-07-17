@@ -6,18 +6,19 @@
 import { type Request, type Response, type NextFunction } from 'express'
 import { type Captcha } from '../data/types'
 import { CaptchaModel } from '../models/captcha'
+import crypto from 'crypto'
 
 function captchas () {
   return async (req: Request, res: Response) => {
     const captchaId = req.app.locals.captchaId++
     const operators = ['*', '+', '-']
 
-    const firstTerm = Math.floor((Math.random() * 10) + 1)
-    const secondTerm = Math.floor((Math.random() * 10) + 1)
-    const thirdTerm = Math.floor((Math.random() * 10) + 1)
+    const firstTerm = crypto.randomInt(1, 11)
+    const secondTerm = crypto.randomInt(1, 11)
+    const thirdTerm = crypto.randomInt(1, 11)
 
-    const firstOperator = operators[Math.floor((Math.random() * 3))]
-    const secondOperator = operators[Math.floor((Math.random() * 3))]
+    const firstOperator = operators[crypto.randomInt(0, 3)]
+    const secondOperator = operators[crypto.randomInt(0, 3)]
 
     const expression = firstTerm.toString() + firstOperator + secondTerm.toString() + secondOperator + thirdTerm.toString()
     const answer = eval(expression).toString() // eslint-disable-line no-eval
