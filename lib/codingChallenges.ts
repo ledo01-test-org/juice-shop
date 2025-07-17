@@ -18,25 +18,38 @@ interface CachedCodeChallenge {
 export const findFilesWithCodeChallenges = async (paths: readonly string[]): Promise<FileMatch[]> => {
   const matches = []
   for (const currPath of paths) {
-    const resolvedPath = path.resolve(currPath)
-    if ((await fs.lstat(resolvedPath)).isDirectory()) {
-      const files = await fs.readdir(resolvedPath)
+    // Normalize path to prevent path traversal
+    const normalizedPath = path.normalize(currPath)
+    
+    // Validate that the path is within allowed directories
+    const isAllowedPath = SNIPPET_PATHS.some(allowedPath => 
+      normalizedPath.startsWith(path.normalize(allowedPath))
+    )
+    
+    if (!isAllowedPath) {
+      logger.warn(`Skipping potentially unsafe path: ${normalizedPath}`)
+      continue
+    }
+
+    const stat = await fs.lstat(normalizedPath)
+    if (stat.isDirectory()) {
+      const files = await fs.readdir(normalizedPath)
       const moreMatches = await findFilesWithCodeChallenges(
-        files.map(file => path.resolve(resolvedPath, file))
+        files.map(file => path.resolve(normalizedPath, file))
       )
       matches.push(...moreMatches)
     } else {
       try {
-        const code = await fs.readFile(resolvedPath, 'utf8')
+        const code = await fs.readFile(normalizedPath, 'utf8')
         if (
           // strings are split so that it doesn't find itself...
           code.includes('// vuln-code' + '-snippet start') ||
           code.includes('# vuln-code' + '-snippet start')
         ) {
-          matches.push({ path: resolvedPath, content: code })
+          matches.push({ path: normalizedPath, content: code })
         }
       } catch (e) {
-        logger.warn(`File ${resolvedPath} could not be read. it might have been moved or deleted. If coding challenges are contained in the file, they will not be available.`)
+        logger.warn(`File ${normalizedPath} could not be read. it might have been moved or deleted. If coding challenges are contained in the file, they will not be available.`)
       }
     }
   }
