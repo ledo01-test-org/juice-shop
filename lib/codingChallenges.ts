@@ -46,9 +46,9 @@ export const findFilesWithCodeChallenges = async (paths: readonly string[]): Pro
 function getCodeChallengesFromFile (file: FileMatch) {
   const fileContent = file.content
 
-  // get all challenges which are in the file by a regex capture group
-  const challengeKeyRegex = /[/#]{0,2} vuln-code-snippet start (?<challenges>.*)/g
-  const challenges = [...fileContent.matchAll(challengeKeyRegex)]
+  // get all challenges which are in the file by a hardcoded regex
+  const challengeKeyRegex = /[/#]{0,2} vuln-code-snippet start (?<challenges>.*)/
+  const challenges = [...fileContent.matchAll(new RegExp(challengeKeyRegex, 'g'))]
     .flatMap(match => match.groups?.challenges?.split(' ') ?? [])
     .filter(Boolean)
 
@@ -56,7 +56,8 @@ function getCodeChallengesFromFile (file: FileMatch) {
 }
 
 function getCodingChallengeFromFileContent (source: string, challengeKey: string) {
-  const snippets = source.match(`[/#]{0,2} vuln-code-snippet start.*${challengeKey}([^])*vuln-code-snippet end.*${challengeKey}`)
+  const snippetRegex = new RegExp(`[/#]{0,2} vuln-code-snippet start.*${challengeKey}([^])*vuln-code-snippet end.*${challengeKey}`)
+  const snippets = source.match(snippetRegex)
   if (snippets == null) {
     throw new BrokenBoundary('Broken code snippet boundaries for: ' + challengeKey)
   }
@@ -73,9 +74,11 @@ function getCodingChallengeFromFileContent (source: string, challengeKey: string
   const vulnLines = []
   const neutralLines = []
   for (let i = 0; i < lines.length; i++) {
-    if (new RegExp(`vuln-code-snippet vuln-line.*${challengeKey}`).exec(lines[i]) != null) {
+    const vulnLineRegex = new RegExp(`vuln-code-snippet vuln-line.*${challengeKey}`)
+    const neutralLineRegex = new RegExp(`vuln-code-snippet neutral-line.*${challengeKey}`)
+    if (vulnLineRegex.exec(lines[i]) != null) {
       vulnLines.push(i + 1)
-    } else if (new RegExp(`vuln-code-snippet neutral-line.*${challengeKey}`).exec(lines[i]) != null) {
+    } else if (neutralLineRegex.exec(lines[i]) != null) {
       neutralLines.push(i + 1)
     }
   }
