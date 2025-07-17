@@ -19,8 +19,16 @@ export const findFilesWithCodeChallenges = async (paths: readonly string[]): Pro
   const matches = []
   for (const currPath of paths) {
     const resolvedPath = path.resolve(currPath)
-    const stat = await fs.lstat(resolvedPath)
-    if (stat.isDirectory()) {
+    
+    // Validate and normalize the path to prevent path traversal
+    const basePath = path.resolve('.')
+    if (!resolvedPath.startsWith(basePath)) {
+      logger.warn(`Skipping potentially unsafe path: ${currPath}`)
+      continue
+    }
+
+    const stats = await fs.lstat(resolvedPath)
+    if (stats.isDirectory()) {
       const files = await fs.readdir(resolvedPath)
       const moreMatches = await findFilesWithCodeChallenges(
         files.map(file => path.resolve(resolvedPath, file))
